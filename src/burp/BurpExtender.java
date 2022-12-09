@@ -1,131 +1,39 @@
 package burp;
-// vim: et:ts=4:sts=4:sw=4:fileencoding=utf-8
 
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+import java.util.Optional;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 
-public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
-{
-    private burp.IExtensionHelpers helpers;
-    private PrintWriter stdout;
-    private PrintWriter stderr;
-
-    private String nextToken = "";
-    private int nextTokenLen = 0;
-
-    // implement IBurpExtender
-    @Override
-    public void registerExtenderCallbacks(burp.IBurpExtenderCallbacks callbacks)
-    {
-        // obtain an extension helpers object
-        helpers = callbacks.getHelpers();
-        stdout = new PrintWriter(callbacks.getStdout(), true);
-        stderr = new PrintWriter(callbacks.getStderr(),true);
-
-        // set our extension name
-        callbacks.setExtensionName("Update Access Token");
-
-        // register ourselves as an HTTP listener
-        callbacks.registerHttpListener(this);
-
-        stdout.println("-----Plugin Loaded-------");
-    }
-
-
-    // implement IHttpListener
-    @Override
-    public void processHttpMessage(int toolFlag, boolean messageIsRequest, burp.IHttpRequestResponse messageInfo)
-    {
-        boolean updated = false;
-        String[] checks = new String[]{ "{\"accessToken\":\"", "{\"accesstoken\":\"","{\"AccessToken\":\"","{\"access_Token\":\"","{\"access_token\":\"" ,"{\"Access_Token\":\""};
-
-        // only process requests
-        if (messageIsRequest) {
-            // get the HTTP service for the request
-            burp.IHttpService httpService = messageInfo.getHttpService();
-            burp.IRequestInfo iRequest = helpers.analyzeRequest(messageInfo);
-
-            String request = new String(messageInfo.getRequest());
-
-            List<String> headers = iRequest.getHeaders();
-            // get the request body
-            String reqBody = request.substring(iRequest.getBodyOffset());
-
-            //Get all the data needed
-            String[] pieces = headers.get(0).split(" ", 3);
-            String httpmethod = pieces[0];
-            String uri = pieces[1];
-
-            //Update Token Logic
-            if (!nextToken.equals("")) {
-                //Code for updating a token in a Header
-                //log old header & update new header
-                for (int i = 0; i < headers.size(); i++)
-                {
-                    String H = headers.get(i);
-                    if (H.toLowerCase().startsWith("authorization:")) {
-                        pieces = H.split(" ", 3);
-                        if (pieces[1].toLowerCase().equals("bearer")) {
-                            String hash = pieces[2];
-                            int hashLen = hash.length();
-                            stdout.println("Replacing " + (hashLen < 8 ? hash : hash.substring(0, 4) + "..." + hash.substring(hashLen - 4, hashLen)) 
-                                    + " with " + (nextTokenLen < 8 ? nextToken : nextToken.substring(0, 4) + "..." + nextToken.substring(nextTokenLen - 4, nextTokenLen)));
-                            H = pieces[0] + " " + pieces[1] + " " + nextToken;
-                            headers.set(i, H);
-                            updated = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (updated) {
-                byte[] message = helpers.buildHttpMessage(headers, reqBody.getBytes());
-                messageInfo.setRequest(message);
-            }
-        }
-        else//it's a response - grab a new token
-        {
-            burp.IRequestInfo iResponse = helpers.analyzeRequest(messageInfo);
-            String response = new String(messageInfo.getResponse());
-
-            //start at {"access_token":"
-            //end at "
-            for (String check: checks) {
-                if (response.contains(check)) {
-                    String startMatch = check;
-                    String endMatch = "\"";
-                    int tokenStartIndex = response.indexOf(startMatch) + startMatch.length();
-                    int tokenEndIndex = response.indexOf(endMatch, tokenStartIndex+1);
-
-                    nextToken = response.substring(tokenStartIndex, tokenEndIndex);
-                    nextTokenLen = nextToken.length();
-
-                    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-                    Date date = new Date();
-
-                    stdout.println(dateFormat.format(date));
-                    stdout.println("grabbed token starts with" + nextToken.substring(0,16));
-
-                    break;
-                }
-            }
-        }
-    }
-}
-
-package burp;
-
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import java.text.DateFormat;
-
-public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
+public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener, burp.Constants, burp.SecurityUtils
 {
     private burp.IExtensionHelpers helpers;
     private PrintWriter stdout;
@@ -150,7 +58,6 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         stdout.println("-----     Plugin Loaded   -------");
         stdout.println("-----Author: Xiaogeng Chen-------");
     }
-
 
     // implement IHttpListener
     @Override
@@ -191,14 +98,22 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
                     encryptedData = response.substring(dataStartIndex, dataEndIndex);
 
-                    // decrypt the secret key using private key
+                    
 
-                    String privateKey = FileIOUtil
+                    try {
+                        // decrypt the secret key using private key
+                        String decryptedKey = decryptWithRSA(encryptedSecretKey, "UTF-8", "/privatekey/path");
+                        byte[] iv = detachIV(decryptedKey);
+                        byte[] decodedKey = detachSecretKeyAES(decryptedKey);
 
+                        // decrypt the data using decrypted secret key
+                        SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
+                        String decryptedBody = decryptWithAES(encryptedData, "UTF-8", key, iv);
 
-                    // decrypt the data using decrypted secret key
+                        //get the data
 
-                    //get the data
+                    } catch (Exception e) {
+                    }
 
                 }
             }
