@@ -11,3 +11,4 @@ And then include it in future request headers in the following format:
 ```
 Authorization: Bearer 5dbf5b54-4644-4015-a08e-333deea4c78c
 ```
+# Burp-Decryption-Handler
