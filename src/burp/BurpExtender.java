@@ -2,43 +2,17 @@ package burp;
 
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import java.text.DateFormat;
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.nio.file.Paths;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
-import java.util.Optional;
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 
-public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener, burp.Constants, burp.SecurityUtils
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 {
     private burp.IExtensionHelpers helpers;
     private PrintWriter stdout;
     private PrintWriter stderr;
     private Boolean DEBUG = Boolean.TRUE;
+    private SecurityUtils securityUtils;
 
     // implement IBurpExtender
     @Override
@@ -64,20 +38,22 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener, bur
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, burp.IHttpRequestResponse messageInfo)
     {
 
-        boolean updated = false;
-        // Set the prefix of target in response, allow to set multiple
         String[] checks = new String[]{ "\"body\":{\"data\":\"",};
 
         // only process requests
         if (!messageIsRequest) {
-            burp.IRequestInfo iResponse = helpers.analyzeRequest(messageInfo);
+
+            burp.IResponseInfo iResponse = helpers.analyzeResponse(messageInfo);
+            //get whole response
             String response = new String(messageInfo.getResponse());
+
+            //get response body
+            String resbody = response.substring(iResponse.getBodyOffset());
 
             for (String check: checks) {
                 while (response.contains(check)) {
 
-                    if(DEBUG)
-                    {stdout.println("DEBUG: response= " + response);}
+                    if(DEBUG){stdout.println("DEBUG: response= " + response);}
 
                     // capture the secret key in the response
                     String secretStartMatch = "\",\"secret\":\"";
@@ -86,7 +62,9 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener, bur
                     int secretStartIndex = response.indexOf(secretStartMatch) + secretStartMatch.length();
                     int secretEndIndex = response.indexOf(secretEndMatch, secretStartIndex+1);
 
-                    encryptedSecretKey = response.substring(secretStartIndex, secretEndIndex);
+                    String encryptedSecretKey = response.substring(secretStartIndex, secretEndIndex);
+
+                    if(DEBUG){stdout.println("DEBUG: encryptedSecretKey= " + encryptedSecretKey);}
 
                     // capture the data in the response
 
@@ -96,21 +74,26 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener, bur
                     int dataStartIndex = response.indexOf(dataStartMatch) + dataEndMatch.length();
                     int dataEndIndex = response.indexOf(dataEndMatch, dataStartIndex+1);
 
-                    encryptedData = response.substring(dataStartIndex, dataEndIndex);
+                    String encryptedData = response.substring(dataStartIndex, dataEndIndex);
 
-                    
+                    if(DEBUG){stdout.println("DEBUG: encryptedData= " + encryptedData);}
 
                     try {
                         // decrypt the secret key using private key
-                        String decryptedKey = decryptWithRSA(encryptedSecretKey, "UTF-8", "/privatekey/path");
-                        byte[] iv = detachIV(decryptedKey);
-                        byte[] decodedKey = detachSecretKeyAES(decryptedKey);
+                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", "/privatekey/path");
+                        byte[] iv = this.securityUtils.detachIV(decryptedKey);
+                        byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
 
                         // decrypt the data using decrypted secret key
                         SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
-                        String decryptedBody = decryptWithAES(encryptedData, "UTF-8", key, iv);
+                        String decryptedBody = this.securityUtils.decryptWithAES(encryptedData, "UTF-8", key, iv);
+                        if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
                         //get the data
+                        List<String> headers = iResponse.getHeaders();
+                        resbody = resbody + decryptedBody;
+                        byte[] message = helpers.buildHttpMessage(headers, resbody.getBytes());
+                        messageInfo.setRequest(message);
 
                     } catch (Exception e) {
                     }

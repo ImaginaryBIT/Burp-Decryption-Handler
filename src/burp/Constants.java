@@ -1,3 +1,5 @@
+package burp;
+
 public class Constants {
 
     public static final String ALGO_RSA = "RSA";

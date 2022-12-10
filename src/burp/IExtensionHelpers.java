@@ -68,12 +68,12 @@ public interface IExtensionHelpers
      * This method can be used to analyze an HTTP response, and obtain various
      * key details about it.
      *
-     * @param response The response to be analyzed.
+     * @param messageInfo The response to be analyzed.
      * @return An
      * <code>IResponseInfo</code> object that can be queried to obtain details
      * about the response.
      */
-    IResponseInfo analyzeResponse(byte[] response);
+    IResponseInfo analyzeResponse(IHttpRequestResponse messageInfo);
 
     /**
      * This method can be used to retrieve details of a specified parameter
@@ -349,4 +349,6 @@ public interface IExtensionHelpers
             byte[] baseRequest,
             int from,
             int to);
+
+
 }
