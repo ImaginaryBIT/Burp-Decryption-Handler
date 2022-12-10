@@ -43,13 +43,16 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         // only process requests
         if (!messageIsRequest) {
 
-            burp.IResponseInfo iResponse = helpers.analyzeResponse(messageInfo);
             //get whole response
             String response = new String(messageInfo.getResponse());
-
-            //get response body
+            burp.IResponseInfo iResponse = helpers.analyzeResponse(messageInfo.getResponse());
+            
+            //get response header and body
             String resbody = response.substring(iResponse.getBodyOffset());
+            List<String> headers = iResponse.getHeaders();
+            if(DEBUG){stdout.println("DEBUG: headers[0]= " + headers.toArray()[0]);}
 
+            //check for sufficient response
             for (String check: checks) {
                 while (response.contains(check)) {
 
@@ -90,7 +93,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                         if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
                         //get the data
-                        List<String> headers = iResponse.getHeaders();
+                        
                         resbody = resbody + decryptedBody;
                         byte[] message = helpers.buildHttpMessage(headers, resbody.getBytes());
                         messageInfo.setRequest(message);
