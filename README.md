@@ -13,7 +13,7 @@ Define the private key in system environment
 #### Linux/MacOS
 `vim ~/.zshrc`
 ```
-export private_key_path:"/tmp/key.pri"
+export private_key_path="/tmp/key.pri"
 ```
 `source ~/.zshrc`
 
