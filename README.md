@@ -8,14 +8,6 @@ gradle build
 Artifact inside /build/libs
 
 ### setup
-Define the private key in system environment
+Store the private key in the following path
+`/tmp/keys/private-key.pk8`
 
-#### Linux/MacOS
-`vim ~/.zshrc`
-```
-export private_key_path="/tmp/key.pri"
-```
-`source ~/.zshrc`
-
-#### Windows
-`setx private_key_path "/tmp/key.pri"`

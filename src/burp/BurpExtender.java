@@ -42,14 +42,6 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
         String[] checks = new String[]{ "\"body\":{\"data\":\"",};
 
-        try {
-            key_dir = System.getenv("private_key_path");
-            if(DEBUG){stdout.println("DEBUG: key_dir= " + key_dir);}
-            
-        } catch (Exception e) {
-            // TODO: handle exception
-        }
-
         // only process requests
         if (!messageIsRequest) {
 
@@ -94,7 +86,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                     try {
                         
                         // decrypt the secret key using private key
-                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_dir);
+                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", "/tmp/keys/private-key.pk8");
                         byte[] iv = this.securityUtils.detachIV(decryptedKey);
                         byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
 
