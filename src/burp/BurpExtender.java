@@ -2,6 +2,7 @@ package burp;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.io.File;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -13,7 +14,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private PrintWriter stderr;
     private Boolean DEBUG = Boolean.TRUE;
     private SecurityUtils securityUtils;
-    private String key_dir;
+    private String key_path= "/tmp/keys/private-key.pk8";
 
     // implement IBurpExtender
     @Override
@@ -31,7 +32,19 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         callbacks.registerHttpListener(this);
 
         stdout.println("-----     Plugin Loaded   -------");
+        stdout.println("-----Created by JPMC Pentest Team-------");
         stdout.println("-----Author: Xiaogeng Chen-------");
+        if(DEBUG){
+            stdout.println("DEBUG: Check if private key is exist");
+            File file = new File(key_path);
+
+            // Check if the file exists
+            if (file.exists()) {
+                stdout.println("File exists: " + key_path);
+            } else {
+                stdout.println("File does not exist: " + key_path);
+            }
+        }
 
     }
 
@@ -86,7 +99,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                     try {
                         
                         // decrypt the secret key using private key
-                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", "/tmp/keys/private-key.pk8");
+                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
                         byte[] iv = this.securityUtils.detachIV(decryptedKey);
                         byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
 
