@@ -107,14 +107,14 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
                 if(DEBUG){stdout.println("DEBUG: start");}
 
-                String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
+                String decryptedKey = securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
                 if(DEBUG){stdout.println("DEBUG: decryptedKey= " + decryptedKey);}
-                byte[] iv = this.securityUtils.detachIV(decryptedKey);
-                byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
+                byte[] iv = securityUtils.detachIV(decryptedKey);
+                byte[] decodedKey = securityUtils.detachSecretKeyAES(decryptedKey);
 
                 // decrypt the data using decrypted secret key
                 SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
-                String decryptedBody = this.securityUtils.decryptWithAES(encryptedData, "UTF-8", key, iv);
+                String decryptedBody = securityUtils.decryptWithAES(encryptedData, "UTF-8", key, iv);
                 if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
                 //get the data
