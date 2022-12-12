@@ -104,6 +104,9 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             try {
                 
                 // decrypt the secret key using private key
+
+                if(DEBUG){stdout.println("DEBUG: start");}
+
                 String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
                 if(DEBUG){stdout.println("DEBUG: decryptedKey= " + decryptedKey);}
                 byte[] iv = this.securityUtils.detachIV(decryptedKey);
