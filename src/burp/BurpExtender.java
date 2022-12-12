@@ -133,6 +133,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         String privateKey = key
         .replace("-----BEGIN PRIVATE KEY-----", "")
         .replaceAll(System.lineSeparator(), "")
+        .replaceAll("\n", "")
         .replace("-----END PRIVATE KEY-----", "");
 
         if(DEBUG){stdout.println("DEBUG: privateKey= " + privateKey);};
