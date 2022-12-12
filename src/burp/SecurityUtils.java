@@ -89,7 +89,13 @@ public class SecurityUtils {
 
     public String decryptWithRSA(String textToDecrypt, String charset, String privateKeyPath) throws Exception {
 
-        if(DEBUG){stdout.println("DEBUG: decryptWithRSA");};
+        if(DEBUG){
+            stdout.println("DEBUG: decryptWithRSA= ");
+            stdout.println("DEBUG: textToDecrypt= " + textToDecrypt);
+            stdout.println("DEBUG: charset= " + charset);
+            stdout.println("DEBUG: privateKeyPath= " + privateKeyPath);
+        }
+
         PrivateKey key = getPrivateKeyFromPKCS8(Constants.ALGO_RSA, privateKeyPath);
         return decrypt(Constants.ALGO_RSA, textToDecrypt, key, charset, null);
     }
