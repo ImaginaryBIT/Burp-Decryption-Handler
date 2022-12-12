@@ -17,6 +17,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private String key_path_unix= "/tmp/keys/private-key.pk8";
     private String key_path_win= "c:\\private-key.pk8";
     private String key_path;
+    private String resbody;
 
     // implement IBurpExtender
     @Override
@@ -69,62 +70,58 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             burp.IResponseInfo iResponse = helpers.analyzeResponse(messageInfo.getResponse());
             
             //get response header and body
-            String resbody = response.substring(iResponse.getBodyOffset());
+            resbody = response.substring(iResponse.getBodyOffset());
             List<String> headers = iResponse.getHeaders();
             if(DEBUG){stdout.println("DEBUG: headers[0]= " + headers.toArray()[0]);}
 
             //check for sufficient response
-            for (String check: checks) {
-                while (response.contains(check)) {
 
-                    //if(DEBUG){stdout.println("DEBUG: response= " + response);}
+            //if(DEBUG){stdout.println("DEBUG: response= " + response);}
 
-                    // capture the secret key in the response
-                    String secretStartMatch = "\",\"secret\":\"";
-                    String secretEndMatch = "\"}},\"signature\":\"";
+            // capture the secret key in the response
+            String secretStartMatch = "\",\"secret\":\"";
+            String secretEndMatch = "\"}},\"signature\":\"";
 
-                    int secretStartIndex = response.indexOf(secretStartMatch) + secretStartMatch.length();
-                    int secretEndIndex = response.indexOf(secretEndMatch, secretStartIndex+1);
+            int secretStartIndex = response.indexOf(secretStartMatch) + secretStartMatch.length();
+            int secretEndIndex = response.indexOf(secretEndMatch, secretStartIndex+1);
 
-                    String encryptedSecretKey = response.substring(secretStartIndex, secretEndIndex);
+            String encryptedSecretKey = response.substring(secretStartIndex, secretEndIndex);
 
-                    if(DEBUG){stdout.println("DEBUG: encryptedSecretKey= " + encryptedSecretKey);}
+            if(DEBUG){stdout.println("DEBUG: encryptedSecretKey= " + encryptedSecretKey);}
 
-                    // capture the data in the response
+            // capture the data in the response
 
-                    String dataStartMatch = "\"body\":{\"data\":\"";
-                    String dataEndMatch = "\",\"secret\":\"";
+            String dataStartMatch = "\"body\":{\"data\":\"";
+            String dataEndMatch = "\",\"secret\":\"";
 
-                    int dataStartIndex = response.indexOf(dataStartMatch) + dataStartMatch.length();
-                    int dataEndIndex = response.indexOf(dataEndMatch, dataStartIndex+1);
+            int dataStartIndex = response.indexOf(dataStartMatch) + dataStartMatch.length();
+            int dataEndIndex = response.indexOf(dataEndMatch, dataStartIndex+1);
 
-                    String encryptedData = response.substring(dataStartIndex, dataEndIndex);
+            String encryptedData = response.substring(dataStartIndex, dataEndIndex);
 
-                    if(DEBUG){stdout.println("DEBUG: encryptedData= " + encryptedData);}
+            if(DEBUG){stdout.println("DEBUG: encryptedData= " + encryptedData);}
 
-                    try {
-                        
-                        // decrypt the secret key using private key
-                        String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
-                        byte[] iv = this.securityUtils.detachIV(decryptedKey);
-                        byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
+            try {
+                
+                // decrypt the secret key using private key
+                String decryptedKey = this.securityUtils.decryptWithRSA(encryptedSecretKey, "UTF-8", key_path);
+                if(DEBUG){stdout.println("DEBUG: decryptedKey= " + decryptedKey);}
+                byte[] iv = this.securityUtils.detachIV(decryptedKey);
+                byte[] decodedKey = this.securityUtils.detachSecretKeyAES(decryptedKey);
 
-                        // decrypt the data using decrypted secret key
-                        SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
-                        String decryptedBody = this.securityUtils.decryptWithAES(encryptedData, "UTF-8", key, iv);
-                        if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
+                // decrypt the data using decrypted secret key
+                SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
+                String decryptedBody = this.securityUtils.decryptWithAES(encryptedData, "UTF-8", key, iv);
+                if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
-                        //get the data
-                        
-                        resbody = resbody + decryptedBody;
-                        byte[] message = helpers.buildHttpMessage(headers, resbody.getBytes());
-                        messageInfo.setRequest(message);
+                //get the data
+                resbody = resbody + decryptedBody;
+                byte[] message = helpers.buildHttpMessage(headers, resbody.getBytes());
+                messageInfo.setRequest(message);
 
-                    } catch (Exception e) {
-                    }
-
-                }
+            } catch (Exception e) {
             }
+
         }
     }
 }
