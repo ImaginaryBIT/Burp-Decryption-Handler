@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -126,7 +128,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
     public PrivateKey getPrivateKeyFromPKCS8(String algorithm, String privateKeyPath) throws Exception {
 
-        String key = new String(Files.readAllBytes(privateKeyPath), Charset.defaultCharset());
+        String key = new String(Files.readAllBytes(Paths.get(privateKeyPath)), Charset.defaultCharset());
 
         String privateKey = key
         .replace("-----BEGIN PRIVATE KEY-----", "")

@@ -1,13 +1,19 @@
-// JAVA_HOME=c:/jdk8 gradle --no-daemon assemble
 plugins {
     id 'java'
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
-dependencies {
-    
+dependencies{
+    implementation 'org.springframework.data:spring-data-mongodb:1.7.2.RELEASE'
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
