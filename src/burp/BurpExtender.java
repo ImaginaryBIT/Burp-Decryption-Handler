@@ -36,13 +36,6 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Paths;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-
 public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 {
     private burp.IExtensionHelpers helpers;
@@ -90,19 +83,6 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         }
     }
 
-    public String readFromFilePath(String path) throws IOException {
-        String path2 = path.trim();
-        if (!Files.exists(Paths.get(path2, new String[0]), new LinkOption[0])) {
-            path2 = getAbsolutePath(path2);
-        }
-        return new String(Files.readAllBytes(Paths.get(path2, new String[0])));
-    }
-
-    private String getAbsolutePath(String classPathResource) throws IOException {
-        Resource resource = new ClassPathResource(classPathResource);
-        return resource.getFile().getAbsolutePath();
-    }
-
     public String decryptWithRSA(String textToDecrypt, String charset, String privateKeyPath) throws Exception {
 
         if(DEBUG){
@@ -146,7 +126,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
     public PrivateKey getPrivateKeyFromPKCS8(String algorithm, String privateKeyPath) throws Exception {
         if(DEBUG){stdout.println("DEBUG: getPrivateKeyFromPKCS8");};
-        String privateKey = readFromFilePath(privateKeyPath);
+        String privateKey = FileIOUtil.readFromFilePath(privateKeyPath);
         return encodePrivateKey(privateKey, algorithm);
     }
 
