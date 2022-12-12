@@ -77,7 +77,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             for (String check: checks) {
                 while (response.contains(check)) {
 
-                    if(DEBUG){stdout.println("DEBUG: response= " + response);}
+                    //if(DEBUG){stdout.println("DEBUG: response= " + response);}
 
                     // capture the secret key in the response
                     String secretStartMatch = "\",\"secret\":\"";
@@ -95,7 +95,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                     String dataStartMatch = "\"body\":{\"data\":\"";
                     String dataEndMatch = "\",\"secret\":\"";
 
-                    int dataStartIndex = response.indexOf(dataStartMatch) + dataEndMatch.length();
+                    int dataStartIndex = response.indexOf(dataStartMatch) + dataStartMatch.length();
                     int dataEndIndex = response.indexOf(dataEndMatch, dataStartIndex+1);
 
                     String encryptedData = response.substring(dataStartIndex, dataEndIndex);
