@@ -259,9 +259,9 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                 if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
                 //get the data
-                resbody = resbody + decryptedBody;
+                resbody = decryptedBody;
                 byte[] message = helpers.buildHttpMessage(headers, resbody.getBytes());
-                messageInfo.setRequest(message);
+                messageInfo.setResponse(message);
 
             } catch (Exception e) {
             }
