@@ -35,6 +35,10 @@ public class SecurityUtils {
     private PrintWriter stdout;
     private Boolean DEBUG = Boolean.TRUE;
 
+    public SecurityUtils(){
+        
+    }
+
     private byte[] read(ByteArrayInputStream byteArrayInputStream) throws IOException {
 
         if(DEBUG){stdout.println("DEBUG: read");};
@@ -90,7 +94,7 @@ public class SecurityUtils {
     public String decryptWithRSA(String textToDecrypt, String charset, String privateKeyPath) throws Exception {
 
         if(DEBUG){
-            stdout.println("DEBUG: decryptWithRSA= ");
+            stdout.println("DEBUG: decryptWithRSA ");
             stdout.println("DEBUG: textToDecrypt= " + textToDecrypt);
             stdout.println("DEBUG: charset= " + charset);
             stdout.println("DEBUG: privateKeyPath= " + privateKeyPath);
