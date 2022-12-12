@@ -15,6 +15,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -35,6 +37,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ClassPathResource;
 
 public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 {
@@ -46,6 +50,42 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private String key_path_win= "c:\\private-key.pk8";
     private String key_path;
     private String resbody;
+
+    public static final String ALGO_RSA = "RSA";
+    public static final String ALGO_RSA_INSTANCE = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
+    public static final String ALGO_RSA_DIGEST = "SHA-256";
+    public static final String ALGO_RSA_MASK = "MGF1";
+    public static final String ALGO_EC = "EC";
+    public static final String SIGNATURE_ALGO_EC = "SHA256withECDSA";
+    public static final String ALGO_AES = "AES";
+    public static final String ALGO_AES_INSTANCE = "AES/GCM/NoPadding";
+    public static final int AES_KEY_LENGTH = 256;
+    public static final int AES_TAG_LENGTH = 128;
+    public static final int AES_IV_LENGTH_96 = 96;
+    public static final int AES_IV_LENGTH_12 = 12;
+    public static final String SIGNATURE = "SHA256withRSA";
+    public static final String PUBLIC_KEY_STRING_START = "-----BEGIN PUBLIC KEY-----";
+    public static final String PUBLIC_KEY_STRING_END = "-----END PUBLIC KEY-----";
+    public static final String PRIVATE_KEY_STRING_START = "-----BEGIN PRIVATE KEY-----";
+    public static final String PRIVATE_KEY_STRING_END = "-----END PRIVATE KEY-----";
+    public static final String HASHICORP_ROLE_ID = "HASHICORP_ROLE_ID";
+    public static final String HASHICORP_SECRET_ID = "HASHICORP_SECRET_ID";
+    public static final String HASHICORP_TOKEN = "HASHICORP_TOKEN";
+    public static final String HASHICORP_CLIENT_KEYSTORE_PWD = "HASHICORP_CLIENT_KEYSTORE_PWD";
+    public static final String HASHICORP_CLIENT_TRUSTSTORE_PWD = "HASHICORP_CLIENT_TRUSTSTORE_PWD";
+    public static final String HASHICORP_KEY_PREFIX = "vault:v1:";
+    public static final String HASHICORP_TRANSITE_SIGN_PATH = "transit/sign/";
+    public static final String HASHICORP_TRANSITE_VERIFY_PATH = "transit/verify/";
+    public static final String HASHICORP_TRANSITE_ENCRYPT_PATH = "transit/encrypt/";
+    public static final String HASHICORP_TRANSITE_DECRYPT_PATH = "transit/decrypt/";
+    public static final String HASHICORP_SECRET_SIGN_PATH = "secret/sign/";
+    public static final String HASHICORP_SECRET_VERIFY_PATH = "secret/verify/";
+    public static final String HASHICORP_ETHEREUM_ACCOUNT_ENDPOINT = "ethereum/accounts/";
+    public static final String SIGNATURE_ALGORITHM = "pkcs1v15";
+    public static final String HASH_ALGORITHM = "sha2-256";
+    public static final String UTF_8 = "UTF-8";
+    public static final String PROCESSING_UNBOUND_SIGN_REQUEST = "PROCESSING_UNBOUND_SIGN_REQUEST";
+    public static final String UNBOUND_SIGN_ERROR = "ERROR_UNBOUND_SIGN";
 
     // implement IBurpExtender
     @Override
@@ -83,6 +123,19 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         }
     }
 
+    public static String readFromFilePath(String path) throws IOException {
+        String path2 = path.trim();
+        if (!Files.exists(Paths.get(path2, new String[0]), new LinkOption[0])) {
+            path2 = getAbsolutePath(path2);
+        }
+        return new String(Files.readAllBytes(Paths.get(path2, new String[0])));
+    }
+
+    private static String getAbsolutePath(String classPathResource) throws IOException {
+        Resource resource = new ClassPathResource(classPathResource);
+        return resource.getFile().getAbsolutePath();
+    }
+
     public String decryptWithRSA(String textToDecrypt, String charset, String privateKeyPath) throws Exception {
 
         if(DEBUG){
@@ -92,8 +145,8 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             stdout.println("DEBUG: privateKeyPath= " + privateKeyPath);
         }
 
-        PrivateKey key = getPrivateKeyFromPKCS8(Constants.ALGO_RSA, privateKeyPath);
-        return decrypt(Constants.ALGO_RSA, textToDecrypt, key, charset, null);
+        PrivateKey key = getPrivateKeyFromPKCS8(ALGO_RSA, privateKeyPath);
+        return decrypt(ALGO_RSA, textToDecrypt, key, charset, null);
     }
 
     private byte[] read(ByteArrayInputStream byteArrayInputStream) throws IOException {
@@ -115,7 +168,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     public PrivateKey encodePrivateKey(String privateKey, String algorithm) throws Exception {
         if(DEBUG){stdout.println("DEBUG: encodePrivateKey");};
         
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(privateKey.replace(Constants.PRIVATE_KEY_STRING_START, "").replace(Constants.PRIVATE_KEY_STRING_END, "").getBytes());
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(privateKey.replace(PRIVATE_KEY_STRING_START, "").replace(PRIVATE_KEY_STRING_END, "").getBytes());
         if (byteArrayInputStream == null || algorithm == null || algorithm.equalsIgnoreCase("")) {
             return null;
         }
@@ -126,7 +179,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
     public PrivateKey getPrivateKeyFromPKCS8(String algorithm, String privateKeyPath) throws Exception {
         if(DEBUG){stdout.println("DEBUG: getPrivateKeyFromPKCS8");};
-        String privateKey = FileIOUtil.readFromFilePath(privateKeyPath);
+        String privateKey = readFromFilePath(privateKeyPath);
         return encodePrivateKey(privateKey, algorithm);
     }
 
@@ -135,11 +188,11 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         byte[] textToDecryptBytes = Base64.getMimeDecoder().decode(textToDecrypt);
         if(DEBUG){stdout.println("DEBUG: decrypt");};
 
-        if (algorithm.equalsIgnoreCase(Constants.ALGO_RSA)) {
-            cipher = Cipher.getInstance(Constants.ALGO_RSA_INSTANCE);
-            cipher.init(2, key, new OAEPParameterSpec("SHA-256", Constants.ALGO_RSA_MASK, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
-        } else if (algorithm.equalsIgnoreCase(Constants.ALGO_AES)) {
-            cipher = Cipher.getInstance(Constants.ALGO_AES_INSTANCE);
+        if (algorithm.equalsIgnoreCase(ALGO_RSA)) {
+            cipher = Cipher.getInstance(ALGO_RSA_INSTANCE);
+            cipher.init(2, key, new OAEPParameterSpec("SHA-256", ALGO_RSA_MASK, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
+        } else if (algorithm.equalsIgnoreCase(ALGO_AES)) {
+            cipher = Cipher.getInstance(ALGO_AES_INSTANCE);
             cipher.init(2, key, new GCMParameterSpec(128, iv));
         } else {
             cipher = Cipher.getInstance(algorithm);
@@ -149,7 +202,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     }
 
     public String decryptWithAES(String textToDecrypt, String charset, SecretKey key, byte[] iv) throws Exception {
-        return decrypt(Constants.ALGO_AES, textToDecrypt, key, charset, iv);
+        return decrypt(ALGO_AES, textToDecrypt, key, charset, iv);
     }
 
     public byte[] detachIV(String decryptedKey) {
@@ -232,7 +285,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
                 byte[] decodedKey = detachSecretKeyAES(decryptedKey);
 
                 // decrypt the data using decrypted secret key
-                SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, Constants.ALGO_AES);
+                SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, ALGO_AES);
                 String decryptedBody = decryptWithAES(encryptedData, "UTF-8", key, iv);
                 if(DEBUG){stdout.println("DEBUG: decryptedBody= " + decryptedBody);}
 
