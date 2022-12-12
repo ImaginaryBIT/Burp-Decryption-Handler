@@ -43,7 +43,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private burp.IExtensionHelpers helpers;
     private PrintWriter stdout;
     private PrintWriter stderr;
-    private Boolean DEBUG = Boolean.FALSE;
+    private Boolean DEBUG = Boolean.TRUE;
     private String key_path_unix= "/tmp/keys/private-key.pk8";
     private String key_path_win= "c:\\private-key.pk8";
     private String key_path;
