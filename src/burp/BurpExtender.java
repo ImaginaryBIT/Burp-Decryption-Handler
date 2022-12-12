@@ -125,11 +125,20 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     }
 
     public PrivateKey getPrivateKeyFromPKCS8(String algorithm, String privateKeyPath) throws Exception {
-        if(DEBUG){stdout.println("DEBUG: getPrivateKeyFromPKCS8");};
-        String privateKey = FileIOUtil.readFromFilePath(privateKeyPath);
+
+        String key = new String(Files.readAllBytes(privateKeyPath), Charset.defaultCharset());
+
+        String privateKey = key
+        .replace("-----BEGIN PRIVATE KEY-----", "")
+        .replaceAll(System.lineSeparator(), "")
+        .replace("-----END PRIVATE KEY-----", "");
+
+        if(DEBUG){stdout.println("DEBUG: privateKey= " + privateKey);};
+
         return encodePrivateKey(privateKey, algorithm);
     }
 
+    
     public String decrypt(String algorithm, String textToDecrypt, Key key, String charset, byte[] iv) throws Exception {
         Cipher cipher;
         byte[] textToDecryptBytes = Base64.getMimeDecoder().decode(textToDecrypt);
