@@ -149,17 +149,21 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         if (algorithm.equalsIgnoreCase(Constants.ALGO_RSA)) {
             cipher = Cipher.getInstance(Constants.ALGO_RSA_INSTANCE);
             cipher.init(2, key, new OAEPParameterSpec("SHA-256", Constants.ALGO_RSA_MASK, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
+            if(DEBUG){stdout.println("DEBUG: ALGO_RSA_INSTANCE");};
         } else if (algorithm.equalsIgnoreCase(Constants.ALGO_AES)) {
             cipher = Cipher.getInstance(Constants.ALGO_AES_INSTANCE);
             cipher.init(2, key, new GCMParameterSpec(128, iv));
+            if(DEBUG){stdout.println("DEBUG: ALGO_AES_INSTANCE");};
         } else {
             cipher = Cipher.getInstance(algorithm);
             cipher.init(2, key);
+            if(DEBUG){stdout.println("DEBUG: algorithm");};
         }
         return new String(cipher.doFinal(textToDecryptBytes), charset);
     }
 
     public String decryptWithAES(String textToDecrypt, String charset, SecretKey key, byte[] iv) throws Exception {
+        if(DEBUG){stdout.println("DEBUG: decryptWithAES");};
         return decrypt(Constants.ALGO_AES, textToDecrypt, key, charset, iv);
     }
 
