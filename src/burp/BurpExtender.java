@@ -37,77 +37,13 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private String key_path_win= "c:\\private-key.pk8";
     private String key_path;
     private String resbody;
-    public String ALGO_RSA = "RSA";
-    public String ALGO_RSA_INSTANCE = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
-    public String ALGO_RSA_DIGEST = "SHA-256";
-    public String ALGO_RSA_MASK = "MGF1";
-    public String ALGO_EC = "EC";
-    public String SIGNATURE_ALGO_EC = "SHA256withECDSA";
-    public String ALGO_AES = "AES";
-    public String ALGO_AES_INSTANCE = "AES/GCM/NoPadding";
-    public int AES_KEY_LENGTH = 256;
-    public int AES_TAG_LENGTH = 128;
-    public int AES_IV_LENGTH_96 = 96;
-    public int AES_IV_LENGTH_12 = 12;
-    public String SIGNATURE = "SHA256withRSA";
-    public String PUBLIC_KEY_STRING_START = "-----BEGIN PUBLIC KEY-----";
-    public String PUBLIC_KEY_STRING_END = "-----END PUBLIC KEY-----";
-    public String PRIVATE_KEY_STRING_START = "-----BEGIN PRIVATE KEY-----";
-    public String PRIVATE_KEY_STRING_END = "-----END PRIVATE KEY-----";
-    public String HASHICORP_ROLE_ID = "HASHICORP_ROLE_ID";
-    public String HASHICORP_SECRET_ID = "HASHICORP_SECRET_ID";
-    public String HASHICORP_TOKEN = "HASHICORP_TOKEN";
-    public String HASHICORP_CLIENT_KEYSTORE_PWD = "HASHICORP_CLIENT_KEYSTORE_PWD";
-    public String HASHICORP_CLIENT_TRUSTSTORE_PWD = "HASHICORP_CLIENT_TRUSTSTORE_PWD";
-    public String HASHICORP_KEY_PREFIX = "vault:v1:";
-    public String HASHICORP_TRANSITE_SIGN_PATH = "transit/sign/";
-    public String HASHICORP_TRANSITE_VERIFY_PATH = "transit/verify/";
-    public String HASHICORP_TRANSITE_ENCRYPT_PATH = "transit/encrypt/";
-    public String HASHICORP_TRANSITE_DECRYPT_PATH = "transit/decrypt/";
-    public String HASHICORP_SECRET_SIGN_PATH = "secret/sign/";
-    public String HASHICORP_SECRET_VERIFY_PATH = "secret/verify/";
-    public String HASHICORP_ETHEREUM_ACCOUNT_ENDPOINT = "ethereum/accounts/";
-    public String SIGNATURE_ALGORITHM = "pkcs1v15";
-    public String HASH_ALGORITHM = "sha2-256";
-    public String UTF_8 = "UTF-8";
-    public String PROCESSING_UNBOUND_SIGN_REQUEST = "PROCESSING_UNBOUND_SIGN_REQUEST";
-    public String UNBOUND_SIGN_ERROR = "ERROR_UNBOUND_SIGN";
-
-    // implement IBurpExtender
-    @Override
-    public void registerExtenderCallbacks(burp.IBurpExtenderCallbacks callbacks)
-    {
-        // obtain an extension helpers object
-        helpers = callbacks.getHelpers();
-        stdout = new PrintWriter(callbacks.getStdout(), true);
-        stderr = new PrintWriter(callbacks.getStderr(),true);
-
-        // set our extension name
-        callbacks.setExtensionName("RSA Decryption and AES decrpyion");
-
-        // register ourselves as an HTTP listener
-        callbacks.registerHttpListener(this);
-
-        stdout.println("-----     Plugin Loaded   -------");
-        stdout.println("-----Created by JPMC Pentest Team-------");
-        stdout.println("-----Author: Xiaogeng Chen-------");
-        if(DEBUG){
-            stdout.println("DEBUG: Check if private key is exist");
-            File file1 = new File(key_path_unix);
-            File file2 = new File(key_path_win);
-
-            // Check if the linux file exists
-            if (file1.exists()) {
-                key_path = key_path_unix;
-                stdout.println("File exists: " + key_path);
-            } else if (file2.exists()) {
-                    key_path = key_path_win;
-                    stdout.println("File exists: " + key_path);
-            }else{
-                    stdout.println("File does not exist: " + key_path);
-            }
-        }
-    }
+    private String ALGO_RSA = "RSA"; 
+    private String ALGO_RSA_INSTANCE = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding";
+    private String ALGO_RSA_MASK = "MGF1";
+    private String ALGO_AES = "AES";
+    private String ALGO_AES_INSTANCE = "AES/GCM/NoPadding";
+    private String PRIVATE_KEY_STRING_START = "-----BEGIN PRIVATE KEY-----";
+    private String PRIVATE_KEY_STRING_END = "-----END PRIVATE KEY-----";
 
     public String readFromFilePath(String path) throws IOException {
         String path2 = path.trim();
@@ -213,6 +149,41 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         return decodedKey;
     }
 
+    // implement IBurpExtender
+    @Override
+    public void registerExtenderCallbacks(burp.IBurpExtenderCallbacks callbacks)
+    {
+        // obtain an extension helpers object
+        helpers = callbacks.getHelpers();
+        stdout = new PrintWriter(callbacks.getStdout(), true);
+        stderr = new PrintWriter(callbacks.getStderr(),true);
+
+        // set our extension name
+        callbacks.setExtensionName("RSA Decryption and AES decrpyion");
+
+        // register ourselves as an HTTP listener
+        callbacks.registerHttpListener(this);
+
+        stdout.println("-----     Plugin Loaded   -------");
+        stdout.println("-----Created by JPMC Pentest Team-------");
+        stdout.println("-----Author: Xiaogeng Chen-------");
+        if(DEBUG){
+            stdout.println("DEBUG: Check if private key is exist");
+            File file1 = new File(key_path_unix);
+            File file2 = new File(key_path_win);
+
+            // Check if the linux file exists
+            if (file1.exists()) {
+                key_path = key_path_unix;
+                stdout.println("File exists: " + key_path);
+            } else if (file2.exists()) {
+                    key_path = key_path_win;
+                    stdout.println("File exists: " + key_path);
+            }else{
+                    stdout.println("File does not exist: " + key_path);
+            }
+        }
+    }
 
     // implement IHttpListener
     @Override
