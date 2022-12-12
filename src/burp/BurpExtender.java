@@ -224,8 +224,8 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             int secretStartIndex = response.indexOf(secretStartMatch) + secretStartMatch.length();
             int secretEndIndex = response.indexOf(secretEndMatch, secretStartIndex+1);
 
-            String encryptedSecretKey = response.substring(secretStartIndex, secretEndIndex).replaceAll("\\r\\n", "")
-            .replaceAll("\n", "");
+            String encryptedSecretKeyRaw = response.substring(secretStartIndex, secretEndIndex);
+            String encryptedSecretKey = encryptedSecretKeyRaw.replaceAll("\\r\\n", "").replaceAll("\n", "");
 
             if(DEBUG){stdout.println("DEBUG: encryptedSecretKey= " + encryptedSecretKey);}
 
@@ -237,8 +237,8 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
             int dataStartIndex = response.indexOf(dataStartMatch) + dataStartMatch.length();
             int dataEndIndex = response.indexOf(dataEndMatch, dataStartIndex+1);
 
-            String encryptedData = response.substring(dataStartIndex, dataEndIndex).replaceAll("\\r\\n", "")
-            .replaceAll("\n", "");
+            String encryptedDataRaw = response.substring(dataStartIndex, dataEndIndex);
+            String encryptedData = encryptedDataRaw.replaceAll("\\r\\n", "").replaceAll("\n", "");
 
             if(DEBUG){stdout.println("DEBUG: encryptedData= " + encryptedData);}
 
