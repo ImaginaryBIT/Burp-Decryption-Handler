@@ -14,7 +14,9 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     private PrintWriter stderr;
     private Boolean DEBUG = Boolean.TRUE;
     private SecurityUtils securityUtils;
-    private String key_path= "/tmp/keys/private-key.pk8";
+    private String key_path_unix= "/tmp/keys/private-key.pk8";
+    private String key_path_win= "c:\\private-key.pk8";
+    private String key_path;
 
     // implement IBurpExtender
     @Override
@@ -36,16 +38,20 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
         stdout.println("-----Author: Xiaogeng Chen-------");
         if(DEBUG){
             stdout.println("DEBUG: Check if private key is exist");
-            File file = new File(key_path);
+            File file1 = new File(key_path_unix);
+            File file2 = new File(key_path_win);
 
-            // Check if the file exists
-            if (file.exists()) {
+            // Check if the linux file exists
+            if (file1.exists()) {
+                key_path = key_path_unix;
                 stdout.println("File exists: " + key_path);
-            } else {
-                stdout.println("File does not exist: " + key_path);
+            } else if (file2.exists()) {
+                    key_path = key_path_win;
+                    stdout.println("File exists: " + key_path);
+            }else{
+                    stdout.println("File does not exist: " + key_path);
             }
         }
-
     }
 
     // implement IHttpListener
