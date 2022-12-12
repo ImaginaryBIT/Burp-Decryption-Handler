@@ -3,34 +3,47 @@ package burp;
 import java.io.PrintWriter;
 import java.util.List;
 import java.io.File;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.Key;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Optional;
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 
 public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 {
-
-    private Boolean DEBUG = Boolean.FALSE;
-
     private burp.IExtensionHelpers helpers;
     private PrintWriter stdout;
     private PrintWriter stderr;
+    private Boolean DEBUG = Boolean.FALSE;
     private String key_path_unix= "/tmp/keys/private-key.pk8";
     private String key_path_win= "c:\\private-key.pk8";
     private String key_path;
@@ -186,13 +199,13 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, burp.IHttpRequestResponse messageInfo)
     {
 
-        // only process response
+        String[] checks = new String[]{ "\"body\":{\"data\":\"",};
+
+        // only process requests
         if (!messageIsRequest) {
 
             //get whole response
-
             String response = new String(messageInfo.getResponse());
-            
             burp.IResponseInfo iResponse = helpers.analyzeResponse(messageInfo.getResponse());
             
             //get response header and body
@@ -252,8 +265,7 @@ public class BurpExtender implements burp.IBurpExtender, burp.IHttpListener
 
             } catch (Exception e) {
             }
-        }
 
-        
+        }
     }
 }
