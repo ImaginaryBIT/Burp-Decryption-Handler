@@ -1,5 +1,6 @@
 package burp;
 
+import java.io.PrintWriter;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -31,7 +32,12 @@ import javax.crypto.spec.PSource;
 /* loaded from: tokenization-0.0.5-SNAPSHOT.jar:BOOT-INF/lib/gateway-security-2.0.16.jar:com/jpmorgan/gateway/security/util/SecurityUtils.class */
 public class SecurityUtils {
 
+    private PrintWriter stdout;
+    private Boolean DEBUG = Boolean.TRUE;
+
     private byte[] read(ByteArrayInputStream byteArrayInputStream) throws IOException {
+
+        if(DEBUG){stdout.println("DEBUG: read");};
         Reader reader = new InputStreamReader(byteArrayInputStream);
         StringWriter writer = new StringWriter();
         char[] buffer = new char[2048];
@@ -46,6 +52,8 @@ public class SecurityUtils {
     }
 
     public PrivateKey encodePrivateKey(String privateKey, String algorithm) throws Exception {
+        if(DEBUG){stdout.println("DEBUG: encodePrivateKey");};
+        
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(privateKey.replace(Constants.PRIVATE_KEY_STRING_START, "").replace(Constants.PRIVATE_KEY_STRING_END, "").getBytes());
         if (byteArrayInputStream == null || algorithm == null || algorithm.equalsIgnoreCase("")) {
             return null;
@@ -56,6 +64,7 @@ public class SecurityUtils {
     }
 
     public PrivateKey getPrivateKeyFromPKCS8(String algorithm, String privateKeyPath) throws Exception {
+        if(DEBUG){stdout.println("DEBUG: getPrivateKeyFromPKCS8");};
         String privateKey = FileIOUtil.readFromFilePath(privateKeyPath);
         return encodePrivateKey(privateKey, algorithm);
     }
@@ -63,6 +72,8 @@ public class SecurityUtils {
     public String decrypt(String algorithm, String textToDecrypt, Key key, String charset, byte[] iv) throws Exception {
         Cipher cipher;
         byte[] textToDecryptBytes = Base64.getMimeDecoder().decode(textToDecrypt);
+        if(DEBUG){stdout.println("DEBUG: decrypt");};
+
         if (algorithm.equalsIgnoreCase(Constants.ALGO_RSA)) {
             cipher = Cipher.getInstance(Constants.ALGO_RSA_INSTANCE);
             cipher.init(2, key, new OAEPParameterSpec("SHA-256", Constants.ALGO_RSA_MASK, MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
@@ -77,6 +88,8 @@ public class SecurityUtils {
     }
 
     public String decryptWithRSA(String textToDecrypt, String charset, String privateKeyPath) throws Exception {
+
+        if(DEBUG){stdout.println("DEBUG: decryptWithRSA");};
         PrivateKey key = getPrivateKeyFromPKCS8(Constants.ALGO_RSA, privateKeyPath);
         return decrypt(Constants.ALGO_RSA, textToDecrypt, key, charset, null);
     }
@@ -86,6 +99,9 @@ public class SecurityUtils {
     }
 
     public byte[] detachIV(String decryptedKey) {
+
+        if(DEBUG){stdout.println("DEBUG: detachIV");};
+
         byte[] iv = null;
         String[] tokens = decryptedKey.split("\\|");
         if (tokens.length > 1) {
@@ -95,6 +111,7 @@ public class SecurityUtils {
     }
 
     public byte[] detachSecretKeyAES(String decryptedKey) {
+        if(DEBUG){stdout.println("DEBUG: detachSecretKeyAES");};
         byte[] decodedKey = null;
         String[] tokens = decryptedKey.split("\\|");
         if (tokens.length > 1) {
